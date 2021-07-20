@@ -55,7 +55,7 @@ defmodule Nerves.Runtime.Init do
     target = KV.get_active("#{prefix}_target")
     devpath = KV.get_active("#{prefix}_devpath")
 
-    %{mounted: nil, fstype: fstype, target: target, devpath: devpath}
+    %{mounted: nil, fstype: fstype, target: target, devpath: devpath, format_performed: false}
     |> do_format()
   end
 
@@ -71,6 +71,7 @@ defmodule Nerves.Runtime.Init do
     |> unmount_if_error()
     |> format_if_unmounted()
     |> mount()
+    |> maybe_restart()
     |> validate_mount()
   end
 
@@ -133,7 +134,7 @@ defmodule Nerves.Runtime.Init do
     )
 
     mkfs(fstype, devpath)
-    s
+    %{s | format_performed: true}
   end
 
   defp format_if_unmounted(s), do: s
@@ -158,4 +159,15 @@ defmodule Nerves.Runtime.Init do
   end
 
   defp validate_mount(s), do: s.mounted
+
+  defp maybe_restart(%{mounted: :mounted, format_performed: true} = s) do
+    # If we formatted and it successfully mounted, we need to restart
+    # before using the partition to prevent errors. This typically
+    # only occurs on first boot
+    Logger.warn("Format and mount successful - restarting...")
+    :init.restart()
+    s
+  end
+
+  defp maybe_restart(s), do: s
 end
