@@ -164,7 +164,7 @@ defmodule Nerves.Runtime.Init do
     # If we formatted and it successfully mounted, we need to restart
     # before using the partition to prevent errors. This typically
     # only occurs on first boot
-    Logger.warn("Format and mount successful - restarting...")
+    Logger.warn("Application data partition successfully formatted - restarting VM...")
     :init.restart()
     s
   end
